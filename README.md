@@ -10,3 +10,4 @@ A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
 * Plottting (what details to plot if it is just impact over time or to include other factors also.
 * GUI (optional)
 * Markov tweet.
+* Explore the `''.join` option for the cleanTweet method.
