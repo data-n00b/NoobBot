@@ -84,11 +84,11 @@ class NoobBot(object):
         self.twitterDF = twitterDF
         self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
         self.twitterDF['ImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity'] 
-        #self.maxImpact = max(self.twitterDF['ImpactScore'])
-        #self.minImpact = min(self.twitterDF['ImpactScore'])
-        #self.up = 50
-        #self.low = -50
-        #self.twitterDF['nImpactScore'] = (((self.up-self.low) * (self.twitterDF['ImpactScore']- self.minImpact)) / (self.maxImpact - self.minImpact)) + self.low
+        self.maxImpact = max(self.twitterDF['ImpactScore'])
+        self.minImpact = min(self.twitterDF['ImpactScore'])
+        self.up = 1000
+        self.low = -1000
+        self.twitterDF['nImpactScore'] = (((self.up-self.low) * (self.twitterDF['ImpactScore']- self.minImpact)) / (self.maxImpact - self.minImpact)) + self.low
         return self.twitterDF
 
 #Defining Tweet Scraper as a separate function outside the scope of the class
@@ -119,7 +119,6 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
-
     
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
