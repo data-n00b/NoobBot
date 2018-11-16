@@ -90,13 +90,6 @@ class NoobBot(object):
         #self.low = -50
         #self.twitterDF['nImpactScore'] = (((self.up-self.low) * (self.twitterDF['ImpactScore']- self.minImpact)) / (self.maxImpact - self.minImpact)) + self.low
         return self.twitterDF
-        
-#def tweetScrape(bot,minutes=5,sleep = 1):
-#    t_end = time.time() + 60*minutes
-#    while time.time() < t_end:
-#        tweetsList, tweetJSON = bot.searchTweets(trendsList[2])
-#        time.sleep(sleep*60)
-#    return tweetsList, tweetJSON
 
 #Defining Tweet Scraper as a separate function outside the scope of the class
 def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump')):
@@ -127,10 +120,6 @@ if __name__ == '__main__':
     access_token_secret = '<Your Access Token Secret>';
     '''
 
-    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
-    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
-    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
@@ -139,15 +128,7 @@ if __name__ == '__main__':
     
     bot1 = NoobBot(api)
     trendsList = bot1.locTrends()
-    #tweetsList, tweetJSON = bot1.searchTweets(trendsList[2])
-    t_end = time.time() + 60*15
-    tListAll = []
-    while time.time() < t_end:
-        for i in range(len(trendsList)):
-            tListAll = (bot1.searchTweets(trendsList[i])[0])
-        time.sleep(60)
-    with open('scrapedData_11_05.csv','a',encoding="UTF8") as file:
-        tListAll.to_csv(file,header=True)
+    tListAll = tweetScraper(bot1,trendsList)
     bot1.calculateScore(tListAll)    
     
     
