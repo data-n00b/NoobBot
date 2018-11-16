@@ -27,6 +27,7 @@ import re
 import time
 from geopy.geocoders import Nominatim
 import pandas as pd
+import datetime
 import matplotlib.pyplot as plt
 pd.options.mode.chained_assignment = None
  
@@ -77,6 +78,18 @@ class NoobBot(object):
     def tweetSentiment(self,text):
         self.blob = TextBlob(text)
         return self.blob.sentiment.polarity
+       
+    
+    def calculateScore(self,twitterDF):
+        self.twitterDF = twitterDF
+        self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
+        self.twitterDF['ImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity'] 
+        #self.maxImpact = max(self.twitterDF['ImpactScore'])
+        #self.minImpact = min(self.twitterDF['ImpactScore'])
+        #self.up = 50
+        #self.low = -50
+        #self.twitterDF['nImpactScore'] = (((self.up-self.low) * (self.twitterDF['ImpactScore']- self.minImpact)) / (self.maxImpact - self.minImpact)) + self.low
+        return self.twitterDF
         
 #def tweetScrape(bot,minutes=5,sleep = 1):
 #    t_end = time.time() + 60*minutes
@@ -84,12 +97,40 @@ class NoobBot(object):
 #        tweetsList, tweetJSON = bot.searchTweets(trendsList[2])
 #        time.sleep(sleep*60)
 #    return tweetsList, tweetJSON
-        
+
+#Defining Tweet Scraper as a separate function outside the scope of the class
+def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump')):
+    '''
+    bot - api authenticated Tweepy Object
+    forTime - Time limit in minutes to scrape tweets for.
+    onceEvery - Time in seconds that the scrapper sleeps and wakes.
+    trendsList - List of Trends from an object or custom trends to search for. Must be a list object
+    writes to an output CSV file
+    '''
+    t_end = time.time() + onceEvery*forTime
+    tListAll = []
+    while time.time() < t_end:
+        for i in range(len(trendsList)):
+            tListAll = (bot1.searchTweets(trendsList[i])[0])
+        time.sleep(onceEvery)
+    with open(filename,'a',encoding="UTF8") as file:
+        tListAll.to_csv(file,header=True)
+    return tListAll
+
+
 if __name__ == '__main__':
+
+    '''
     consumer_key = '<Your Consumer Key>'; 
     consumer_secret = '<Your Consumer Secret>'; 
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
+    '''
+
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
@@ -107,4 +148,6 @@ if __name__ == '__main__':
         time.sleep(60)
     with open('scrapedData_11_05.csv','a',encoding="UTF8") as file:
         tListAll.to_csv(file,header=True)
+    bot1.calculateScore(tListAll)    
+    
     
