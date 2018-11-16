@@ -128,6 +128,6 @@ if __name__ == '__main__':
     bot1 = NoobBot(api)
     trendsList = bot1.locTrends()
     tListAll = tweetScraper(bot1,trendsList)
-    bot1.calculateScore(tListAll)    
+    tListImpact = bot1.calculateScore(tListAll)    
     
     
