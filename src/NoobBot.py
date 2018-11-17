@@ -87,6 +87,12 @@ class NoobBot(object):
        
     
     def calculateScore(self,twitterDF):
+        """
+        Method to calculate raw and normalized impact scores.
+        Input is a data frame object returned by the searchTweets method
+        Tweets with 0 sentiment polarity are dropped since they do not contribute to the impact score.
+        Data is normalized between -100 and 100
+        """
         self.twitterDF = twitterDF
         self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
         self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity']
@@ -104,7 +110,6 @@ class NoobBot(object):
             self.low = 1
             self.maxImpact = max(group['rawImpactScore'])
             self.minImpact = min(group['rawImpactScore'])
-            print(name,self.minImpact,self.maxImpact)
             self.twitterDFP['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFP['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)
         self.groupedN = self.twitterDFN.groupby('Search Term')
         for name, group in self.groupedN:
@@ -112,7 +117,6 @@ class NoobBot(object):
             self.low = -100
             self.maxImpact = max(group['rawImpactScore'])
             self.minImpact = min(group['rawImpactScore'])
-            print(name,self.minImpact,self.maxImpact)
             self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
         self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
@@ -146,11 +150,17 @@ def getLocation(locString):
     """
 class predictImpact(object):
     def __init__(self,trainData,predictData):
+        """
+        features - List of features that the model is to be trained on
+        """
         self.trainData = trainData
         self.predictData = predictData
         self.features =['Search Term','Retweeted','Retweet Count','Favorite Count']
     
     def encodeModel(self,inData):
+        """
+        Using One Shot Encoding to convert categorical variables into binary vectors
+        """
         self.inData = inData
         X = self.inData[self.features]
         encodedPredictors = pd.get_dummies(X)
@@ -187,18 +197,20 @@ if __name__ == '__main__':
     auth.set_access_token(access_token, access_token_secret)
     
     api = tweepy.API(auth)
-    
+    #Bot Initialization
     bot1 = NoobBot(api)
+    #List of Trends to search for
     trendsList = bot1.locTrends()
+    #Tweet Scrapping
     tListAll = tweetScraper(bot1,trendsList)
-    #print('Finished Scraping')
-    #tListAll = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\scrapedData_11_05_extended.csv")
+    #Calculating Impact Scores
     tListImpact = bot1.calculateScore(tListAll)
+    #Defining a new set of data to predict for
     predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
     newP =predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)    #testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
     newP['nImpactScore'] = ""
+    #Machine Learning Object, model defenition, prediction and assignment.
     mlObject = predictImpact(tListImpact,newP)
     mlObject.buildModel()
     x = mlObject.modelPredict()    
     newP['nImpactScore'] = x
-    print(newP.head(10))
