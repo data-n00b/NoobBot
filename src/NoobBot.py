@@ -192,7 +192,6 @@ if __name__ == '__main__':
     access_token_secret = '<Your Access Token Secret>';
     '''
 
-    
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
@@ -202,7 +201,7 @@ if __name__ == '__main__':
     #List of Trends to search for
     trendsList = bot1.locTrends()
     #Tweet Scrapping
-    tListAll = tweetScraper(bot1,trendsList)
+    tListAll = tweetScraper(bot1,trendsList,forTime = 3)
     #Calculating Impact Scores
     tListImpact = bot1.calculateScore(tListAll)
     #Defining a new set of data to predict for
