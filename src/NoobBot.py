@@ -30,6 +30,10 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 pd.options.mode.chained_assignment = None
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
  
 #geolocator = Nominatim(user_agent = "NoobBot")
 #location = geolocator.geocode("Raleigh NC")
@@ -136,6 +140,40 @@ def getLocation(locString):
     Method to get the name or location of the closest match
     and return the weoid from the json
     """
+def predModel(tweetDf):
+    """
+    Takes in a data frame with nImpact scores and returns a
+    machine learning model to predict based on Keywords and Time.
+    """
+    y = tweetDf.nImpactScore
+    features =['Search Term','rawImpactScore']
+    X = tweetDf[features]
+    #Train Test Split
+    train_X,val_X,train_y,val_y = train_test_split(X,y,random_state = 42)
+    
+    #Specify Model
+    tweetModel = DecisionTreeRegressor(random_state = 42)
+    #Fit Model
+    tweetModel.fit(train_X,train_y)
+    
+    val_predictions = tweetModel.predict(val_X)
+    val_mae = mean_absolute_error(val_predictions, val_y)
+    print("Validation MAE when not specifying max_leaf_nodes: {:,.0f}".format(val_mae))
+    
+    # Using best value for max_leaf_nodes
+    tweetModel = DecisionTreeRegressor(max_leaf_nodes=100, random_state=42)
+    tweetModel.fit(train_X, train_y)
+    val_predictions = tweetModel.predict(val_X)
+    val_mae = mean_absolute_error(val_predictions, val_y)
+    print("Validation MAE for best value of max_leaf_nodes: {:,.0f}".format(val_mae))
+    
+    # Define the model. Set random_state to 1
+    rf_model = RandomForestRegressor(random_state=42)
+    rf_model.fit(train_X, train_y)
+    rf_val_predictions = rf_model.predict(val_X)
+    rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)    
+    print("Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
+    
 
 
 if __name__ == '__main__':
