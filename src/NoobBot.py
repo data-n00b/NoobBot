@@ -140,40 +140,73 @@ def getLocation(locString):
     Method to get the name or location of the closest match
     and return the weoid from the json
     """
-def predModel(tweetDf):
-    """
-    Takes in a data frame with nImpact scores and returns a
-    machine learning model to predict based on Keywords and Time.
-    """
-    y = tweetDf.nImpactScore
-    features =['Search Term','rawImpactScore']
-    X = tweetDf[features]
-    #Train Test Split
-    train_X,val_X,train_y,val_y = train_test_split(X,y,random_state = 42)
+class predictImpact(object):
+    def __init__(self,trainData,predictData):
+        self.trainData = trainData
+        self.predictData = predictData
+        self.features =['Search Term','Sentiment Polarity']
     
-    #Specify Model
-    tweetModel = DecisionTreeRegressor(random_state = 42)
-    #Fit Model
-    tweetModel.fit(train_X,train_y)
+    def encodeModel(self,inData):
+        self.inData = inData
+        X = self.inData[self.features]
+        encodedPredictors = pd.get_dummies(X)
+        return encodedPredictors
     
-    val_predictions = tweetModel.predict(val_X)
-    val_mae = mean_absolute_error(val_predictions, val_y)
-    print("Validation MAE when not specifying max_leaf_nodes: {:,.0f}".format(val_mae))
+    def buildModel(self):
+        self.inData = self.encodeModel(self.trainData)
+        self.y = self.trainData.nImpactScore
+        train_X,val_X,train_y,val_y = train_test_split(self.inData,self.y,random_state = 42)
+        #Specify Model
+        self.tweetModel = DecisionTreeRegressor(random_state = 42)
+        #Fit Model
+        self.tweetModel.fit(train_X,train_y)
+        return self.tweetModel
     
-    # Using best value for max_leaf_nodes
-    tweetModel = DecisionTreeRegressor(max_leaf_nodes=100, random_state=42)
-    tweetModel.fit(train_X, train_y)
-    val_predictions = tweetModel.predict(val_X)
-    val_mae = mean_absolute_error(val_predictions, val_y)
-    print("Validation MAE for best value of max_leaf_nodes: {:,.0f}".format(val_mae))
-    
-    # Define the model. Set random_state to 1
-    rf_model = RandomForestRegressor(random_state=42)
-    rf_model.fit(train_X, train_y)
-    rf_val_predictions = rf_model.predict(val_X)
-    rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)    
-    print("Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
-    
+    def modelPredict(self):
+        self.inData = self.encodeModel(self.predictData)
+        self.y = self.predictData.nImpactScore
+        self.val_predictions = self.tweetModel.predict(self.inData)
+        return self.val_predictions
+        
+        
+        
+#    def predModel(self):
+#        """
+#        Takes in a data frame with nImpact scores and returns a
+#        machine learning model to predict based on Keywords and Time.
+#        """
+#        y = tweetDf.nImpactScore
+#        features =['Search Term','Sentiment Polarity']
+#        X = tweetDf[features]
+#        #Train Test Split
+#        train_X,val_X,train_y,val_y = train_test_split(X,y,random_state = 42)
+#        one_hot_encoded_training_predictors = pd.get_dummies(train_X)
+#        one_hot_encoded_test_predictors = pd.get_dummies(val_X)
+#        final_train, final_test = one_hot_encoded_training_predictors.align(one_hot_encoded_test_predictors,join='left',axis=1)
+#        #Specify Model
+#        tweetModel1 = DecisionTreeRegressor(random_state = 42)
+#        #Fit Model
+#        tweetModel1.fit(final_train,train_y)
+#        
+#        val_predictions = tweetModel1.predict(final_test)
+#        val_mae = mean_absolute_error(val_predictions, val_y)
+#        print("Validation MAE when not specifying max_leaf_nodes: {:,.0f}".format(val_mae))
+#        
+#        # Using best value for max_leaf_nodes
+#        tweetModel2 = DecisionTreeRegressor(max_leaf_nodes=100, random_state=42)
+#        tweetModel2.fit(final_train, train_y)
+#        val_predictions = tweetModel2.predict(final_test)
+#        val_mae = mean_absolute_error(val_predictions, val_y)
+#        print("Validation MAE for best value of max_leaf_nodes: {:,.0f}".format(val_mae))
+#        
+#        # Define the model. Set random_state to 1
+#        rf_model = RandomForestRegressor(random_state=42)
+#        rf_model.fit(final_train, train_y)
+#        rf_val_predictions = rf_model.predict(final_test)
+#        rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)    
+#        print("Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
+#        return tweetModel1
+#        
 
 
 if __name__ == '__main__':
@@ -197,13 +230,9 @@ if __name__ == '__main__':
     trendsList = bot1.locTrends()
     #tListAll = tweetScraper(bot1,trendsList)
     tListAll = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\scrapedData_11_05_extended.csv")
-    tListImpact = bot1.calculateScore(tListAll)    
-    
-#tListAll['nImpactScore'] = ""    
-#grouped = tListAll.groupby('Search Term')
-#for name, group in grouped:
-#    group['nImpactScore'] = name
-#    print(name)
-#    print(group)
-#        #j[j['Search Term'] == i]['nImpactScore'] = i
-        
+    tListImpact = bot1.calculateScore(tListAll)
+#    tweetModel = predModel(tListImpact)
+    testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
+    mlObject = predictImpact(tListImpact,testKeywords)
+    mlObject.buildModel()
+    mlObject.modelPredict()    
