@@ -25,7 +25,7 @@ import markovify
 from textblob import TextBlob
 import re
 import time
-from geopy.geocoders import Nominatim
+#from geopy.geocoders import Nominatim
 import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
@@ -34,6 +34,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
+import numpy as np
  
 #geolocator = Nominatim(user_agent = "NoobBot")
 #location = geolocator.geocode("Raleigh NC")
@@ -70,6 +71,7 @@ class NoobBot(object):
         self.tweetDF = pd.DataFrame(self.tweets,columns = self.colNames)
         self.tweetDF = self.tweetDF.drop_duplicates()
         return  self.tweetDF,self.termSearch
+
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
         text = re.sub(r"RT ", "", text) #Strip RT at head
@@ -113,11 +115,11 @@ class NoobBot(object):
             print(name,self.minImpact,self.maxImpact)
             self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
         self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
-        self.twitterDF = self.twitterDF.drop(['Unnamed: 0','Tweet ID', 'cVerified'],axis=1)
+        self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
 
 #Defining Tweet Scraper as a separate function outside the scope of the class
-def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump')):
+def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump.csv')):
     '''
     bot - api authenticated Tweepy Object
     forTime - Time limit in minutes to scrape tweets for.
@@ -131,8 +133,10 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
         for i in range(len(trendsList)):
             tListAll = (bot1.searchTweets(trendsList[i])[0])
         time.sleep(onceEvery)
+        print('End of sleep')
     with open(filename,'a',encoding="UTF8") as file:
         tListAll.to_csv(file,header=True)
+    print('Finished Scraping')
     return tListAll
 
 def getLocation(locString):
@@ -144,7 +148,7 @@ class predictImpact(object):
     def __init__(self,trainData,predictData):
         self.trainData = trainData
         self.predictData = predictData
-        self.features =['Search Term','Sentiment Polarity']
+        self.features =['Search Term','Retweeted','Retweet Count','Favorite Count']
     
     def encodeModel(self,inData):
         self.inData = inData
@@ -167,46 +171,6 @@ class predictImpact(object):
         self.y = self.predictData.nImpactScore
         self.val_predictions = self.tweetModel.predict(self.inData)
         return self.val_predictions
-        
-        
-        
-#    def predModel(self):
-#        """
-#        Takes in a data frame with nImpact scores and returns a
-#        machine learning model to predict based on Keywords and Time.
-#        """
-#        y = tweetDf.nImpactScore
-#        features =['Search Term','Sentiment Polarity']
-#        X = tweetDf[features]
-#        #Train Test Split
-#        train_X,val_X,train_y,val_y = train_test_split(X,y,random_state = 42)
-#        one_hot_encoded_training_predictors = pd.get_dummies(train_X)
-#        one_hot_encoded_test_predictors = pd.get_dummies(val_X)
-#        final_train, final_test = one_hot_encoded_training_predictors.align(one_hot_encoded_test_predictors,join='left',axis=1)
-#        #Specify Model
-#        tweetModel1 = DecisionTreeRegressor(random_state = 42)
-#        #Fit Model
-#        tweetModel1.fit(final_train,train_y)
-#        
-#        val_predictions = tweetModel1.predict(final_test)
-#        val_mae = mean_absolute_error(val_predictions, val_y)
-#        print("Validation MAE when not specifying max_leaf_nodes: {:,.0f}".format(val_mae))
-#        
-#        # Using best value for max_leaf_nodes
-#        tweetModel2 = DecisionTreeRegressor(max_leaf_nodes=100, random_state=42)
-#        tweetModel2.fit(final_train, train_y)
-#        val_predictions = tweetModel2.predict(final_test)
-#        val_mae = mean_absolute_error(val_predictions, val_y)
-#        print("Validation MAE for best value of max_leaf_nodes: {:,.0f}".format(val_mae))
-#        
-#        # Define the model. Set random_state to 1
-#        rf_model = RandomForestRegressor(random_state=42)
-#        rf_model.fit(final_train, train_y)
-#        rf_val_predictions = rf_model.predict(final_test)
-#        rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)    
-#        print("Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
-#        return tweetModel1
-#        
 
 
 if __name__ == '__main__':
@@ -218,6 +182,7 @@ if __name__ == '__main__':
     access_token_secret = '<Your Access Token Secret>';
     '''
 
+    
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
@@ -225,11 +190,15 @@ if __name__ == '__main__':
     
     bot1 = NoobBot(api)
     trendsList = bot1.locTrends()
-    #tListAll = tweetScraper(bot1,trendsList)
-    tListAll = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\scrapedData_11_05_extended.csv")
+    tListAll = tweetScraper(bot1,trendsList)
+    #print('Finished Scraping')
+    #tListAll = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\scrapedData_11_05_extended.csv")
     tListImpact = bot1.calculateScore(tListAll)
-#    tweetModel = predModel(tListImpact)
-    testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
-    mlObject = predictImpact(tListImpact,testKeywords)
+    predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
+    newP =predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)    #testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
+    newP['nImpactScore'] = ""
+    mlObject = predictImpact(tListImpact,newP)
     mlObject.buildModel()
-    mlObject.modelPredict()    
+    x = mlObject.modelPredict()    
+    newP['nImpactScore'] = x
+    print(newP.head(10))
