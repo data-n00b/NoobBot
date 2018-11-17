@@ -83,12 +83,33 @@ class NoobBot(object):
     def calculateScore(self,twitterDF):
         self.twitterDF = twitterDF
         self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
-        self.twitterDF['ImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity'] 
-        self.maxImpact = max(self.twitterDF['ImpactScore'])
-        self.minImpact = min(self.twitterDF['ImpactScore'])
-        self.up = 1000
-        self.low = -1000
-        self.twitterDF['nImpactScore'] = (((self.up-self.low) * (self.twitterDF['ImpactScore']- self.minImpact)) / (self.maxImpact - self.minImpact)) + self.low
+        self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity']
+        self.twitterDF['nImpactScore'] = 0
+        #Dropping Tweets that have neutral polarity
+        self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
+        #Splitting into groups of Positive and negative raw impact.
+        self.twitterDFP = self.twitterDF[self.twitterDF['rawImpactScore'] > 0]
+        self.twitterDFN = self.twitterDF[self.twitterDF['rawImpactScore'] < 0]
+        #self.up = 100
+        #self.low = -100
+        self.groupedP = self.twitterDFP.groupby('Search Term')        
+        for name, group in self.groupedP:
+            self.up = 100
+            self.low = 1
+            self.maxImpact = max(group['rawImpactScore'])
+            self.minImpact = min(group['rawImpactScore'])
+            print(name,self.minImpact,self.maxImpact)
+            self.twitterDFP['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFP['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)
+        self.groupedN = self.twitterDFN.groupby('Search Term')
+        for name, group in self.groupedN:
+            self.up = -1
+            self.low = -100
+            self.maxImpact = max(group['rawImpactScore'])
+            self.minImpact = min(group['rawImpactScore'])
+            print(name,self.minImpact,self.maxImpact)
+            self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
+        self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
+        self.twitterDF = self.twitterDF.drop(['Unnamed: 0','Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
 
 #Defining Tweet Scraper as a separate function outside the scope of the class
@@ -110,6 +131,12 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
         tListAll.to_csv(file,header=True)
     return tListAll
 
+def getLocation(locString):
+    """
+    Method to get the name or location of the closest match
+    and return the weoid from the json
+    """
+
 
 if __name__ == '__main__':
 
@@ -119,7 +146,10 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
-    
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
@@ -127,7 +157,15 @@ if __name__ == '__main__':
     
     bot1 = NoobBot(api)
     trendsList = bot1.locTrends()
-    tListAll = tweetScraper(bot1,trendsList)
+    #tListAll = tweetScraper(bot1,trendsList)
+    tListAll = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\scrapedData_11_05_extended.csv")
     tListImpact = bot1.calculateScore(tListAll)    
     
-    
+#tListAll['nImpactScore'] = ""    
+#grouped = tListAll.groupby('Search Term')
+#for name, group in grouped:
+#    group['nImpactScore'] = name
+#    print(name)
+#    print(group)
+#        #j[j['Search Term'] == i]['nImpactScore'] = i
+        
