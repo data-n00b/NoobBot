@@ -1,5 +1,16 @@
 # NoobBot
 A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
+
+### What it does.
+* Given a location, returns a list of topics trending in that location. Defaults to New York.
+* Monitors twitter activity to gather tweets for a custom interval. Defaults to gathering every minute for three minutes.
+* Calculates an impact score for the tweet with factors inculding number of retweets, sentiment of the content and popularity of the user.
+* A machine learning algorithm then predicts the evolution of the sentiment for the same keywords overtime, with only the number of retweets and user status without looking at the content of the tweet.
+
+### Under Development
+* Custom selection of user location based on string input (current input is WOEID number)
+* Markov text generation to automatically tweet content with a new method.
+
 ### Features to implement/update
 * Better way to clean text, retain content while stripping 'RT', '@mentions', special characters and links.
 * Track how many @mentions are there in the tweet (Optional)
