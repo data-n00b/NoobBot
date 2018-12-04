@@ -48,7 +48,7 @@ class NoobBot(object):
         self.tweets = []
 #Location set to New York By default
 #locTrends returns a list of trend names from the JSON object
-    def locTrends(self, woeid = 2459115,numTrends = 10):
+    def locTrends(self, woeid = 1,numTrends = 10):
         self.trend =[]
         self.trendJSON = self.tweepyOb.trends_place(woeid)
         for i in range(numTrends):
@@ -99,7 +99,7 @@ class NoobBot(object):
         self.twitterDF['nImpactScore'] = 0
         #Dropping Tweets that have neutral polarity
         self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        #Splitting into groups of Positive and negative raw impact.
+        #Normalized Impact Score calculation by group.
         self.twitterDFP = self.twitterDF[self.twitterDF['rawImpactScore'] > 0]
         self.twitterDFN = self.twitterDF[self.twitterDF['rawImpactScore'] < 0]
         #self.up = 100
@@ -119,6 +119,7 @@ class NoobBot(object):
             self.minImpact = min(group['rawImpactScore'])
             self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
         self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
+        
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
 
@@ -138,6 +139,8 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
             tListAll = (bot1.searchTweets(trendsList[i])[0])
         time.sleep(onceEvery)
         print('End of sleep')
+    #Once again dropping duplicates to have a clean dataFrame
+    tListAll = tListAll.drop_duplicates()    
     with open(filename,'a',encoding="UTF8") as file:
         tListAll.to_csv(file,header=True)
     print('Finished Scraping')
@@ -148,6 +151,12 @@ def getLocation(locString):
     Method to get the name or location of the closest match
     and return the weoid from the json
     """
+    with open("weoidJSON.json", "r") as read_file:
+        data = json.load(read_file)
+    for i in data:
+        if i['name'] == locString:
+            return i['woeid']
+        
 class predictImpact(object):
     def __init__(self,trainData,predictData):
         """
@@ -191,6 +200,10 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
 
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
@@ -199,7 +212,7 @@ if __name__ == '__main__':
     #Bot Initialization
     bot1 = NoobBot(api)
     #List of Trends to search for
-    trendsList = bot1.locTrends()
+    trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
     tListAll = tweetScraper(bot1,trendsList,forTime = 3)
     #Calculating Impact Scores
