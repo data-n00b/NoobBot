@@ -69,7 +69,7 @@ class NoobBot(object):
             tweet[3] = self.cleanTweet(tweet[3])
         self.colNames =['Search Term','Tweet ID','Created At','Tweet Text','Retweeted','Retweet Count','Favorite Count','Followers Count','Is Verified','User Handle','Sentiment Polarity']
         self.tweetDF = pd.DataFrame(self.tweets,columns = self.colNames)
-        self.tweetDF = self.tweetDF.drop_duplicates()
+        self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet ID')
         return  self.tweetDF,self.termSearch
 
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
@@ -97,13 +97,24 @@ class NoobBot(object):
         self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
         self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']) )*self.twitterDF['Sentiment Polarity']
         self.twitterDF['nImpactScore'] = 0
-        #Dropping Tweets that have neutral polarity
+        #Dropping Tweets that have neutral polarity        
         self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        #Normalized Impact Score calculation by group.
+        '''
+        a = -100
+        b = 100
+        maxR = max(self.twitterDF['rawImpactScore'])
+        minR = min(self.twitterDF['rawImpactScore'])
+        term1 = (b-a)
+        term2 = (self.twitterDF['rawImpactScore'] - minR)/(maxR - minR)
+        self.twitterDF['nImpactScore'] = (term1*term2) + (a)
+        
+        '''
+        #Normalized Impact Score calculation by group.      
         self.twitterDFP = self.twitterDF[self.twitterDF['rawImpactScore'] > 0]
         self.twitterDFN = self.twitterDF[self.twitterDF['rawImpactScore'] < 0]
         #self.up = 100
         #self.low = -100
+        
         self.groupedP = self.twitterDFP.groupby('Search Term')        
         for name, group in self.groupedP:
             self.up = 100
@@ -119,10 +130,10 @@ class NoobBot(object):
             self.minImpact = min(group['rawImpactScore'])
             self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
         self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
-        
+
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
-
+'''HELPER FUNCTIONS'''
 #Defining Tweet Scraper as a separate function outside the scope of the class
 def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump.csv')):
     '''
@@ -140,7 +151,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
         time.sleep(onceEvery)
         print('End of sleep')
     #Once again dropping duplicates to have a clean dataFrame
-    tListAll = tListAll.drop_duplicates()    
+    tListAll = tListAll.drop_duplicates(subset='Tweet ID')    
     with open(filename,'a',encoding="UTF8") as file:
         tListAll.to_csv(file,header=True)
     print('Finished Scraping')
@@ -157,6 +168,8 @@ def getLocation(locString):
         if i['name'] == locString:
             return i['woeid']
         
+#def plotTheBot(inputDF):
+    
 class predictImpact(object):
     def __init__(self,trainData,predictData):
         """
