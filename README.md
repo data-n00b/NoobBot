@@ -12,7 +12,7 @@ A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
 * Markov text generation to automatically tweet content with a new method.
 
 ### Features to implement/update
-* Better way to clean text, retain content while stripping 'RT', '@mentions', special characters and links. *Couple core issues around cleaning the text, post which generated content will be normal.
+* Better way to clean text, retain content while stripping 'RT', '@mentions', special characters and links. *Couple core issues around cleaning the text, post which generated content will be normal.*
 * Explore the `''.join` option for the cleanTweet method.
 * Track how many @mentions are there in the tweet (Optional)
 * **DONE** Taken 0 polarity out of the picture.
