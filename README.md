@@ -8,8 +8,7 @@ A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
 * A machine learning algorithm then predicts the evolution of the sentiment for the same keywords overtime, with only the number of retweets and user status without looking at the content of the tweet.
 
 ### Under Development
-* Custom selection of user location based on string input (current input is WOEID number)
-* Markov text generation to automatically tweet content with a new method.
+* Plotting of impact score over time to visualize evolution.
 
 ### Features to implement/update
 * Better way to clean text, retain content while stripping 'RT', '@mentions', special characters and links. *Couple core issues around cleaning the text, post which generated content will be normal.*
