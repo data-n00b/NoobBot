@@ -23,4 +23,4 @@ A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
 * GUI (optional)
 * Markov tweet.
 * Explore the `''.join` option for the cleanTweet method.
-* `weoid` file added. Learn JSON parsing to directly fetch ids
+* **DONE** `weoid` file added. Learn JSON parsing to directly fetch ids
