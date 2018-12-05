@@ -75,11 +75,9 @@ class NoobBot(object):
 
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
-        text = re.sub(r"RT ", "", text) #Strip RT at head
-        text = re.sub(r"@\S+", "", text) #Strip first @mentions
-        text = re.sub(r"http\S+", "", text) #Strip URLS
-        text = re.sub('\W+', ' ', text) #Strip special characters
-        text = re.sub(' +', ' ',text) #Strip un-caught white spaces
+        text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
+        text = text.strip() #Strip trailing and beginning whitespaces
+        text = " ".join(text.split()) #Handle any other whitespaces in the middle of the text
         return text
     
     def tweetSentiment(self,text):
