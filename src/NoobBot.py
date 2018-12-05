@@ -75,11 +75,9 @@ class NoobBot(object):
 
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
-        text = re.sub(r"RT ", "", text) #Strip RT at head
-        text = re.sub(r"@\S+", "", text) #Strip first @mentions
-        text = re.sub(r"http\S+", "", text) #Strip URLS
-        text = re.sub('\W+', ' ', text) #Strip special characters
-        text = re.sub(' +', ' ',text) #Strip un-caught white spaces
+        text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
+        text = text.strip() #Strip trailing and beginning whitespaces
+        text = " ".join(text.split()) #Handle any other whitespaces in the middle of the text
         return text
     
     def tweetSentiment(self,text):
@@ -239,6 +237,10 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
