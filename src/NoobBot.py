@@ -97,15 +97,17 @@ class NoobBot(object):
         self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
         self.twitterDF['nImpactScore'] = 0
         #Dropping Tweets that have neutral polarity        
+        #Normalizing Impact score calculation by group
         self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        '''
+        self.groupedAll = self.twitterDF.groupby('Search Term')        
         a = -100
         b = 100
-        maxR = max(self.twitterDF['rawImpactScore'])
-        minR = min(self.twitterDF['rawImpactScore'])
-        term1 = (b-a)
-        term2 = (self.twitterDF['rawImpactScore'] - minR)/(maxR - minR)
-        self.twitterDF['nImpactScore'] = (term1*term2) + (a)
+        for name, group in self.groupedAll:
+            maxR = max(group['rawImpactScore'])
+            minR = min(group['rawImpactScore'])
+            term1 = (b-a)
+            term2 = (self.twitterDF['rawImpactScore'] - minR)/(maxR - minR)
+            self.twitterDF['nImpactScore'] = (term1*term2) + (a)
         
         '''
         #Normalized Impact Score calculation by group.      
@@ -135,7 +137,7 @@ class NoobBot(object):
             self.twitterDFN['nImpactScore'] = (term1*term2) + (self.low)
             #self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
         self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
-
+        '''
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
     
@@ -201,6 +203,8 @@ class predictImpact(object):
         """
         self.trainData = trainData
         self.predictData = predictData
+        self.predictData = self.predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)
+        self.predictData['nImpactScore'] = ""
         self.features =['Search Term','Retweeted','Retweet Count','Favorite Count']
     
     def encodeModel(self,inData):
@@ -226,7 +230,8 @@ class predictImpact(object):
         self.inData = self.encodeModel(self.predictData)
         self.y = self.predictData.nImpactScore
         self.val_predictions = self.tweetModel.predict(self.inData)
-        return self.val_predictions
+        self.predictData['nImpactScore'] = self.val_predictions
+        return self.predictData
 
 
 if __name__ == '__main__':
@@ -237,6 +242,10 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
@@ -251,12 +260,12 @@ if __name__ == '__main__':
     tListImpact = bot1.calculateScore(tListAll)
     #Defining a new set of data to predict for
     predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
-    newP =predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)    #testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
-    newP['nImpactScore'] = ""
+    #newP =predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)    #testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
+    #newP['nImpactScore'] = ""
     #Machine Learning Object, model defenition, prediction and assignment.
-    mlObject = predictImpact(tListImpact,newP)
+    mlObject = predictImpact(tListImpact,predictData)
     mlObject.buildModel()
-    x = mlObject.modelPredict()    
-    newP['nImpactScore'] = x
+    newP = mlObject.modelPredict()    
+    #predict['nImpactScore'] = x
     #Compose tweets from the given list of trends.
     composedTweets = bot1.markovTweet(tListAll,trendsList)
