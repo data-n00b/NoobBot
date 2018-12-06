@@ -105,9 +105,10 @@ class NoobBot(object):
         for name, group in self.groupedAll:
             maxR = max(group['rawImpactScore'])
             minR = min(group['rawImpactScore'])
+            tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
             term1 = (b-a)
-            term2 = (self.twitterDF['rawImpactScore'] - minR)/(maxR - minR)
-            self.twitterDF['nImpactScore'] = (term1*term2) + (a)
+            term2 = (tempRaw - minR)/(maxR - minR)
+            self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
         
         '''
         #Normalized Impact Score calculation by group.      
