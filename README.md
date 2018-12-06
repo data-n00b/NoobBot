@@ -12,7 +12,7 @@ A twitter bot to record text sentiment using the TextBlob and Tweepy packages.
 
 ### Features to implement/update
 * **DONE** Better way to clean text, retain content while stripping 'RT', '@mentions', special characters and links. *cleanTweet now works as expected.*
-* **DONE**Explore the `''.join` option for the cleanTweet method.
+* **DONE** Explore the `''.join` option for the cleanTweet method.
 * Track how many @mentions are there in the tweet (Optional)
 * **DONE** Taken 0 polarity out of the picture.
   Formula for impact score and how to deal with 0 polarity if that is also taken into account. A linear equation with weighted co-      efficeitns might work.
