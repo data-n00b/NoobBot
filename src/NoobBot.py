@@ -25,7 +25,6 @@ import markovify
 from textblob import TextBlob
 import re
 import time
-#from geopy.geocoders import Nominatim
 import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
@@ -35,10 +34,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 import numpy as np
- 
-#geolocator = Nominatim(user_agent = "NoobBot")
-#location = geolocator.geocode("Raleigh NC")
-#print((location.latitude, location.longitude))
+
 #---------------Initializing the Tweepy Object----------------------#
 
 #tweept API is an autheticated tweepy object
@@ -72,7 +68,6 @@ class NoobBot(object):
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet ID')
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet Text')
         return  self.tweetDF,self.termSearch
-
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
         text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
@@ -100,8 +95,8 @@ class NoobBot(object):
         #Normalizing Impact score calculation by group
         self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
         self.groupedAll = self.twitterDF.groupby('Search Term')        
-        a = -100
-        b = 100
+        a = -1
+        b = 1
         for name, group in self.groupedAll:
             maxR = max(group['rawImpactScore'])
             minR = min(group['rawImpactScore'])
@@ -172,7 +167,10 @@ class predictImpact(object):
     def __init__(self,trainData,predictData):
         """
         features - List of features that the model is to be trained on
+        Precondtion for the ML model is that the keywords should be the same
+        as the ones in the Training model.
         """
+        #Data Pre-processing
         self.trainData = trainData
         self.predictData = predictData
         self.predictData = self.predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)
@@ -214,10 +212,6 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
-    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
-    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
-    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
