@@ -25,7 +25,6 @@ import markovify
 from textblob import TextBlob
 import re
 import time
-#from geopy.geocoders import Nominatim
 import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
@@ -35,10 +34,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 import numpy as np
- 
-#geolocator = Nominatim(user_agent = "NoobBot")
-#location = geolocator.geocode("Raleigh NC")
-#print((location.latitude, location.longitude))
+
 #---------------Initializing the Tweepy Object----------------------#
 
 #tweept API is an autheticated tweepy object
@@ -72,7 +68,6 @@ class NoobBot(object):
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet ID')
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet Text')
         return  self.tweetDF,self.termSearch
-
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
         text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
@@ -97,45 +92,18 @@ class NoobBot(object):
         self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
         self.twitterDF['nImpactScore'] = 0
         #Dropping Tweets that have neutral polarity        
+        #Normalizing Impact score calculation by group
         self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        '''
-        a = -100
-        b = 100
-        maxR = max(self.twitterDF['rawImpactScore'])
-        minR = min(self.twitterDF['rawImpactScore'])
-        term1 = (b-a)
-        term2 = (self.twitterDF['rawImpactScore'] - minR)/(maxR - minR)
-        self.twitterDF['nImpactScore'] = (term1*term2) + (a)
-        
-        '''
-        #Normalized Impact Score calculation by group.      
-        self.twitterDFP = self.twitterDF[self.twitterDF['rawImpactScore'] > 0]
-        self.twitterDFN = self.twitterDF[self.twitterDF['rawImpactScore'] < 0]
-        #self.up = 100
-        #self.low = -100
-        
-        self.groupedP = self.twitterDFP.groupby('Search Term')        
-        for name, group in self.groupedP:
-            self.up = 100
-            self.low = 1
-            self.maxImpact = max(group['rawImpactScore'])
-            self.minImpact = min(group['rawImpactScore'])
-            term1 = (self.up - self.low)
-            term2 = (self.twitterDFP['rawImpactScore'] - self.minImpact)/(self.maxImpact - self.minImpact)
-            self.twitterDFP['nImpactScore'] = (term1*term2) + (self.low)
-            #self.twitterDFP['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFP['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)
-        self.groupedN = self.twitterDFN.groupby('Search Term')
-        for name, group in self.groupedN:
-            self.up = -1
-            self.low = -100
-            self.maxImpact = max(group['rawImpactScore'])
-            self.minImpact = min(group['rawImpactScore'])
-            term1 = (self.up - self.low)
-            term2 = (self.twitterDFN['rawImpactScore'] - self.minImpact)/(self.maxImpact - self.minImpact)
-            self.twitterDFN['nImpactScore'] = (term1*term2) + (self.low)
-            #self.twitterDFN['nImpactScore'] = ((((self.up)-(self.low)) * (self.twitterDFN['rawImpactScore']- (self.minImpact))) / ((self.maxImpact) - (self.minImpact))) + (self.low)  
-        self.twitterDF = pd.concat([self.twitterDFP,self.twitterDFN],axis = 0, ignore_index = True)
-
+        self.groupedAll = self.twitterDF.groupby('Search Term')        
+        a = -1
+        b = 1
+        for name, group in self.groupedAll:
+            maxR = max(group['rawImpactScore'])
+            minR = min(group['rawImpactScore'])
+            tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
+            term1 = (b-a)
+            term2 = (tempRaw - minR)/(maxR - minR)
+            self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
     
@@ -158,7 +126,7 @@ class NoobBot(object):
         return self.composed
 '''HELPER FUNCTIONS'''
 #Defining Tweet Scraper as a separate function outside the scope of the class
-def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump.csv')):
+def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.datetime.now().strftime('%m_%d_%Y') + ' tweetDump.csv'),save='N'):
     '''
     bot - api authenticated Tweepy Object
     forTime - Time limit in minutes to scrape tweets for.
@@ -176,9 +144,10 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     #Once again dropping duplicates to have a clean dataFrame
     tListAll = tListAll.drop_duplicates(subset='Tweet ID')   
     tListAll = tListAll.drop_duplicates(subset='Tweet Text')
-    with open(filename,'a',encoding="UTF8") as file:
-        tListAll.to_csv(file,header=True)
-    print('Finished Scraping')
+    if save == 'Y':
+        with open(filename,'a',encoding="UTF8") as file:
+            tListAll.to_csv(file,header=True)
+        print('Finished Scraping')
     return tListAll
 
 def getLocation(locString):
@@ -198,9 +167,14 @@ class predictImpact(object):
     def __init__(self,trainData,predictData):
         """
         features - List of features that the model is to be trained on
+        Precondtion for the ML model is that the keywords should be the same
+        as the ones in the Training model.
         """
+        #Data Pre-processing
         self.trainData = trainData
         self.predictData = predictData
+        self.predictData = self.predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)
+        self.predictData['nImpactScore'] = ""
         self.features =['Search Term','Retweeted','Retweet Count','Favorite Count']
     
     def encodeModel(self,inData):
@@ -226,7 +200,8 @@ class predictImpact(object):
         self.inData = self.encodeModel(self.predictData)
         self.y = self.predictData.nImpactScore
         self.val_predictions = self.tweetModel.predict(self.inData)
-        return self.val_predictions
+        self.predictData['nImpactScore'] = self.val_predictions
+        return self.predictData
 
 
 if __name__ == '__main__':
@@ -246,17 +221,14 @@ if __name__ == '__main__':
     #List of Trends to search for
     trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
-    tListAll = tweetScraper(bot1,trendsList,forTime = 3)
+    tListAll = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
     #Calculating Impact Scores
     tListImpact = bot1.calculateScore(tListAll)
     #Defining a new set of data to predict for
     predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
-    newP =predictData.drop(['Tweet ID','Created At','Tweet Text','Followers Count','User Handle','Sentiment Polarity'],axis = 1)    #testKeywords = pd.read_csv(r"C:\Users\Arvind\OneDrive\Data Backup Folder From Dell\Documents\NC State\Fall 2018\ISE 589 Python\Project\testSentiment.csv")
-    newP['nImpactScore'] = ""
     #Machine Learning Object, model defenition, prediction and assignment.
-    mlObject = predictImpact(tListImpact,newP)
+    mlObject = predictImpact(tListImpact,predictData)
     mlObject.buildModel()
-    x = mlObject.modelPredict()    
-    newP['nImpactScore'] = x
+    newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
     composedTweets = bot1.markovTweet(tListAll,trendsList)
