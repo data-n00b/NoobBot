@@ -223,10 +223,6 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
-    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'; 
-    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'; 
-    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
