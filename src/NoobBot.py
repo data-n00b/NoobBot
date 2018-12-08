@@ -249,11 +249,11 @@ if __name__ == '__main__':
     #Defining a new set of data to predict for
     predictData = tweetScraper(bot1,trendsList,forTime=1)
     #Machine Learning Object, model defenition, prediction and assignment.
-    mlObject = predictImpact(scrappedTweets,predictData)
+    mlObject = predictImpact(tweetImpact,predictData)
     mlObject.buildModel()
     newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
-    #tweetAbout = list(set(list(scrappedTweets['Search Term'])))
+    #trendsList = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
-    plotTheBot(scrappedTweets)
-    plotTheBot(predictData)
+    plotTheBot(tweetImpact)
+    plotTheBot(newP)
