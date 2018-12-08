@@ -223,25 +223,30 @@ if __name__ == '__main__':
     access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'; 
     access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs';
     
+    #Auth is a tweepy object to initialize a twitter bot.
+    #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
     api = tweepy.API(auth)
     #Bot Initialization
     bot1 = NoobBot(api)
-    #List of Trends to search for
+    #List of Trends to search for. Using New York as a placeholder but
+    #this can be any location in the JSON file.
     trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
-    #tListAll = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
-    tListAll = pd.read_csv("12_06_2018 tweetDump.csv")
+    #Tweets can either be scraped on read in from a previously scrapped file
+    #with the same column format.
+    #scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
-    tListImpact = bot1.calculateScore(tListAll)
+    tweetImpact = bot1.calculateScore(scrappedTweets)
     #Defining a new set of data to predict for
-    predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
+    predictData = tweetScraper(bot1,trendsList,forTime=1)
     #Machine Learning Object, model defenition, prediction and assignment.
-    mlObject = predictImpact(tListImpact,predictData)
+    mlObject = predictImpact(scrappedTweets,predictData)
     mlObject.buildModel()
     newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
-    tweetAbout = list(set(list(tListAll['Search Term'])))
-    composedTweets = bot1.markovTweet(tListAll,tweetAbout)
+    #tweetAbout = list(set(list(scrappedTweets['Search Term'])))
+    composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
