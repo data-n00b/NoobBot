@@ -107,7 +107,7 @@ class NoobBot(object):
         self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
         return self.twitterDF
     
-    def markovTweet(self,twitterDF,tweetAbout):
+    def markovTweet(self,modelIn,tweetAbout):
         '''
         Takes two inputs, the now standard Twitter Data Frame and the
         list of trends to tweet about.
@@ -115,14 +115,20 @@ class NoobBot(object):
         and returns a key dictionary pair that is relevant.
         Includes a hashtag with it
         '''
-        self.twitterDF = twitterDF
+        self.modelIn = modelIn
         self.tweetAbout = tweetAbout
         self.model = [None] * len(self.tweetAbout)
         self.composed = dict()
         for i in range(len(self.tweetAbout)):
-            self.modelInput = tListAll[tListAll['Search Term'] == self.tweetAbout[i]]['Tweet Text']
+            self.modelInput = self.modelIn[self.modelIn['Search Term'] == self.tweetAbout[i]]['Tweet Text']
+            #Converting to a string object to handle dependencies
+            self.modelInput = self.modelInput.to_string(header = False, index = False)
             self.model[i] = markovify.Text(self.modelInput)
-            self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + ' #' + self.tweetAbout[i]
+            #Handling Hashtags in the tweetAbout
+            if self.tweetAbout[i][0] == '#':
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + self.tweetAbout[i]
+            else:
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + ' #' + self.tweetAbout[i]
         return self.composed
 '''HELPER FUNCTIONS'''
 #Defining Tweet Scraper as a separate function outside the scope of the class
@@ -161,7 +167,12 @@ def getLocation(locString):
         if i['name'] == locString:
             return i['woeid']
         
-#def plotTheBot(inputDF):
+def plotTheBot(inputDF):
+    inputDF = inputDF.groupby(['Search Term'])
+    fig, ax = plt.subplots()
+    for name, group in inputDF:
+        group.plot(y='nImpactScore',ax=ax,label = name)
+    plt.show()
     
 class predictImpact(object):
     def __init__(self,trainData,predictData):
@@ -212,23 +223,33 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
+    
+    #Auth is a tweepy object to initialize a twitter bot.
+    #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
     api = tweepy.API(auth)
     #Bot Initialization
     bot1 = NoobBot(api)
-    #List of Trends to search for
+    #List of Trends to search for. Using New York as a placeholder but
+    #this can be any location in the JSON file.
     trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
-    tListAll = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    #Tweets can either be scraped on read in from a previously scrapped file
+    #with the same column format.
+    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
-    tListImpact = bot1.calculateScore(tListAll)
+    tweetImpact = bot1.calculateScore(scrappedTweets)
     #Defining a new set of data to predict for
-    predictData = tweetScraper(bot1,trendsList,forTime=1,filename='predictors.csv')
+    predictData = tweetScraper(bot1,trendsList,forTime=1)
     #Machine Learning Object, model defenition, prediction and assignment.
-    mlObject = predictImpact(tListImpact,predictData)
+    mlObject = predictImpact(tweetImpact,predictData)
     mlObject.buildModel()
     newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
-    composedTweets = bot1.markovTweet(tListAll,trendsList)
+    #trendsList = list(set(list(scrappedTweets['Search Term'])))
+    composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
+    plotTheBot(tweetImpact)
+    plotTheBot(newP)
