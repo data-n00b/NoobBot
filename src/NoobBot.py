@@ -167,7 +167,12 @@ def getLocation(locString):
         if i['name'] == locString:
             return i['woeid']
         
-#def plotTheBot(inputDF):
+def plotTheBot(inputDF):
+    inputDF = inputDF.groupby(['Search Term'])
+    fig, ax = plt.subplots()
+    for name, group in inputDF:
+        group.plot(y='nImpactScore',ax=ax,label = name)
+    plt.show()
     
 class predictImpact(object):
     def __init__(self,trainData,predictData):
@@ -237,8 +242,8 @@ if __name__ == '__main__':
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
-    #scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
-    scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
+    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
     tweetImpact = bot1.calculateScore(scrappedTweets)
     #Defining a new set of data to predict for
@@ -250,3 +255,5 @@ if __name__ == '__main__':
     #Compose tweets from the given list of trends.
     #tweetAbout = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
+    plotTheBot(scrappedTweets)
+    plotTheBot(predictData)
