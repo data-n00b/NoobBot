@@ -29,11 +29,8 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 pd.options.mode.chained_assignment = None
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
-import numpy as np
 
 #---------------Initializing the Tweepy Object----------------------#
 
@@ -214,6 +211,10 @@ def getLocation(locString):
             return 1
         
 def plotTheBot(inputDF):
+    '''
+    Straightforward plotting of the normalized impact score for
+    each keyword over time
+    '''
     inputDF = inputDF.groupby(['Search Term'])
     fig, ax = plt.subplots()
     for name, group in inputDF:
@@ -260,7 +261,6 @@ class predictImpact(object):
         self.predictData['nImpactScore'] = self.val_predictions
         return self.predictData
 
-
 if __name__ == '__main__':
 
     '''
@@ -272,7 +272,8 @@ if __name__ == '__main__':
     consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'
     consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'
     access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs'    
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs'
+    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
