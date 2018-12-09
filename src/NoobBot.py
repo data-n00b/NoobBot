@@ -45,11 +45,24 @@ class NoobBot(object):
 #Location set to New York By default
 #locTrends returns a list of trend names from the JSON object
     def locTrends(self, woeid = 1,numTrends = 10):
-        self.trend =[]
-        self.trendJSON = self.tweepyOb.trends_place(woeid)
-        for i in range(numTrends):
-            self.trend.append(self.trendJSON[0]['trends'][i]['name'])
-        return self.trend
+        '''
+        locTrends returns the keywords currently trending in a speicifc location.
+        woeid is a Where on Earth ID from Yahoo APIs. Defaults to 1(Worldwide) when
+        a location is not specified.
+        numTrends is the number of trends to look for.
+        '''
+        try:
+            #woeid and numTrends cannot be anything other than integers. Exception handling.
+            if type(woeid) == int and type(numTrends) == int:
+                self.trend =[]
+                self.trendJSON = self.tweepyOb.trends_place(woeid)
+                for i in range(numTrends):
+                    self.trend.append(self.trendJSON[0]['trends'][i]['name'])
+                return self.trend
+            else:
+                raise TypeError("Only Integer values accepted for woeid and number of trends")
+        except TypeError:
+            print("Invalid location or number ID. Both values should be integers")
 #searchTweets to search and return tweets within a location. Defaults to worldwide
 #Have to figure out a way to limit duplicates.
 #Maybe run it every hour or so.
