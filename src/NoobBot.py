@@ -71,6 +71,7 @@ class NoobBot(object):
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
         text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
+        text = re.sub(r'\([^)]*\)', '', text)
         text = text.strip() #Strip trailing and beginning whitespaces
         text = " ".join(text.split()) #Handle any other whitespaces in the middle of the text
         return text
@@ -126,9 +127,9 @@ class NoobBot(object):
             self.model[i] = markovify.Text(self.modelInput)
             #Handling Hashtags in the tweetAbout
             if self.tweetAbout[i][0] == '#':
-                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + self.tweetAbout[i]
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(200) + self.tweetAbout[i]
             else:
-                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + ' #' + self.tweetAbout[i]
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(200) + ' #' + self.tweetAbout[i]
         return self.composed
 '''HELPER FUNCTIONS'''
 #Defining Tweet Scraper as a separate function outside the scope of the class
@@ -223,7 +224,10 @@ if __name__ == '__main__':
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
     '''
-    
+    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'
+    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'
+    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'
+    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs'    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -234,12 +238,12 @@ if __name__ == '__main__':
     bot1 = NoobBot(api)
     #List of Trends to search for. Using New York as a placeholder but
     #this can be any location in the JSON file.
-    trendsList = bot1.locTrends(getLocation('New York'))
+    #trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
-    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
-    #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
+    #scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
     tweetImpact = bot1.calculateScore(scrappedTweets)
     #Defining a new set of data to predict for
@@ -249,7 +253,7 @@ if __name__ == '__main__':
     mlObject.buildModel()
     newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
-    #trendsList = list(set(list(scrappedTweets['Search Term'])))
+    trendsList = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
     plotTheBot(tweetImpact)
     plotTheBot(newP)
