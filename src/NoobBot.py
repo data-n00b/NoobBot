@@ -1,23 +1,4 @@
-""" NOTES
-Tweepy does not seem to handle the #Retweeted module very well. Doing an automatic search before putting into a dataFrame
-Run once and check what the columns of the dataframe are.
-You can probably drop the user handle.
-Figure out a way to come up with an impact score.
-Find good ways to plot.
-Define inputs for the methods.
-Figure out a way to create a way to have a test and training data set with and without the impact scores.
-Iron out kinks with wherever the location information is called.
-Write a better cleanText method. Current method seems to change the content.
-Try to weed out duplicates or try to drop retweets all together.
-Find a way to automatically run and scrape with a bash script.
 
-DONE - Try to use time ticks to capture enough information. - Handled with the sleep module of time
-
-CURRENT STATUS
-Runs the code, takes top ten trends for New York, runs a search for 5 minutes
-Updates content in a dataframe for all above obtained keywords and saves to a data frame.
-Using a bash script to scrape data and shut down the computer.
-"""
 #---------------Importing Packages----------------------#
 import tweepy
 import json
@@ -210,13 +191,14 @@ def getLocation(locString):
             print("Unable to match exact location. Defaulting to worldwide")
             return 1
         
-def plotTheBot(inputDF):
+def plotTheBot(inputDF,figureName):
     '''
     Straightforward plotting of the normalized impact score for
     each keyword over time
     '''
     inputDF = inputDF.groupby(['Search Term'])
     fig, ax = plt.subplots()
+    ax.set_title(figureName)
     for name, group in inputDF:
         group.plot(y='nImpactScore',ax=ax,label = name)
     plt.show()
@@ -306,5 +288,5 @@ if __name__ == '__main__':
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
     print("The machine generated tweets for the keywords are:\n")
     pprint.pprint(composedTweets)
-    plotTheBot(tweetImpact)
-    plotTheBot(newP)
+    plotTheBot(tweetImpact,'Original Impact)
+    plotTheBot(newP,'Predicted Impact')
