@@ -120,26 +120,32 @@ class NoobBot(object):
         Tweets with 0 sentiment polarity are dropped since they do not contribute to the impact score.
         Data is normalized between -1 and 1
         """
-        
-        self.twitterDF = twitterDF
-        self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
-        self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
-        self.twitterDF['nImpactScore'] = 0
-        #Dropping Tweets that have neutral polarity        
-        #Normalizing Impact score calculation by group
-        self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        self.groupedAll = self.twitterDF.groupby('Search Term')        
-        a = -1
-        b = 1
-        for name, group in self.groupedAll:
-            maxR = max(group['rawImpactScore'])
-            minR = min(group['rawImpactScore'])
-            tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
-            term1 = (b-a)
-            term2 = (tempRaw - minR)/(maxR - minR)
-            self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
-        self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
-        return self.twitterDF
+        colNames = ['Search Term', 'Tweet ID', 'Created At', 'Tweet Text', 'Retweeted', 'Retweet Count', 'Favorite Count', 'Followers Count', 'Is Verified', 'User Handle', 'Sentiment Polarity']
+        try:
+            if list(twitterDF) == colNames:
+                self.twitterDF = twitterDF
+                self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
+                self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
+                self.twitterDF['nImpactScore'] = 0
+                #Dropping Tweets that have neutral polarity        
+                #Normalizing Impact score calculation by group
+                self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
+                self.groupedAll = self.twitterDF.groupby('Search Term')        
+                a = -1
+                b = 1
+                for name, group in self.groupedAll:
+                    maxR = max(group['rawImpactScore'])
+                    minR = min(group['rawImpactScore'])
+                    tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
+                    term1 = (b-a)
+                    term2 = (tempRaw - minR)/(maxR - minR)
+                    self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
+                self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
+                return self.twitterDF
+            else:
+                raise TypeError
+        except TypeError:
+            print("Mistmatch in column names of input data. Please verify column names and try again")
     
     def markovTweet(self,modelIn,tweetAbout):
         '''
