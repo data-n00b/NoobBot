@@ -200,12 +200,18 @@ def getLocation(locString):
     """
     Method to get the name or location of the closest match
     and return the weoid from the json
+    Dependency is that the JSON file should always be in the 
+    same folder as the program.
+    Returns worldwide as default if the location is not found.
     """
     with open("weoidJSON.json", "r") as read_file:
         data = json.load(read_file)
     for i in data:
         if i['name'] == locString:
             return i['woeid']
+        else:
+            print("Unable to match exact location. Defaulting to worldwide")
+            return 1
         
 def plotTheBot(inputDF):
     inputDF = inputDF.groupby(['Search Term'])
