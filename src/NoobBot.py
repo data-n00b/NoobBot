@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 pd.options.mode.chained_assignment = None
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
-
+import pprint
 #---------------Initializing the Tweepy Object----------------------#
 
 #tweept API is an autheticated tweepy object
@@ -284,11 +284,14 @@ if __name__ == '__main__':
     bot1 = NoobBot(api)
     #List of Trends to search for. Using New York as a placeholder but
     #this can be any location in the JSON file.
-    trendsList = bot1.locTrends(getLocation('New York'))
+    locationIn = input("Enter a location to search trends for: ")
+    trendsList = bot1.locTrends(getLocation(locationIn))
+    print(f"The trends for {locationIn} are {trendsList}")
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
-    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 1,save='Y')
+    forTimeIn = int(input("Enter the amount of time in minutes to collect information: "))
+    scrappedTweets = tweetScraper(bot1,trendsList,forTime = forTimeIn,save='Y')
     #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
     tweetImpact = bot1.calculateScore(scrappedTweets)
@@ -301,5 +304,7 @@ if __name__ == '__main__':
     #Compose tweets from the given list of trends.
     #trendsList = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
+    print("The machine generated tweets for the keywords are:\n")
+    pprint.pprint(composedTweets)
     plotTheBot(tweetImpact)
     plotTheBot(newP)
