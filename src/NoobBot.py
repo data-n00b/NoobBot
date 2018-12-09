@@ -66,7 +66,15 @@ class NoobBot(object):
 #searchTweets to search and return tweets within a location. Defaults to worldwide
 #Have to figure out a way to limit duplicates.
 #Maybe run it every hour or so.
-    def searchTweets(self,searchQuery):
+    def _searchTweets(self,searchQuery):
+        '''
+        Takes a single input keyword that can be any valid string or number and searchTweets
+        returns 100 of the most recent and popular tweets for that keyword.
+        If a list input is given the entire input is treated as a single string to search for.
+        This method is not directly called by the user and by convention is defined with
+        the single underscore in front of the name.
+        Returns a dataframe of tweet data and a tweepy search object.
+        '''
         #Search Quesry Loaded with defaults.
         self.termSearch = self.tweepyOb.search(searchQuery,lang='en',count = 100,show_user=False,result_type='mixed')
         #Retireving all tweets and marking reweets
@@ -76,6 +84,7 @@ class NoobBot(object):
             if tweet[3].startswith('RT '):
                 tweet[4] = True
             tweet[3] = self.cleanTweet(tweet[3])
+        #Dataframe Column defenitions    
         self.colNames =['Search Term','Tweet ID','Created At','Tweet Text','Retweeted','Retweet Count','Favorite Count','Followers Count','Is Verified','User Handle','Sentiment Polarity']
         self.tweetDF = pd.DataFrame(self.tweets,columns = self.colNames)
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet ID')
@@ -83,6 +92,11 @@ class NoobBot(object):
         return  self.tweetDF,self.termSearch
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
+        '''
+        Method to strip a tweet of links, @mentions and braces for processing
+        Returns the cleaned text.
+        Used internally but can also be called to clean external tweeet data
+        '''
         text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
         text = re.sub(r'\([^)]*\)', '', text)
         text = text.strip() #Strip trailing and beginning whitespaces
@@ -90,6 +104,11 @@ class NoobBot(object):
         return text
     
     def tweetSentiment(self,text):
+        '''
+        Returns a value within -1 to 1 as the measure of polarity of the tweet text
+        before it is cleaned.
+        Primarily interal.
+        '''
         self.blob = TextBlob(text)
         return self.blob.sentiment.polarity
        
@@ -99,8 +118,9 @@ class NoobBot(object):
         Method to calculate raw and normalized impact scores.
         Input is a data frame object returned by the searchTweets method
         Tweets with 0 sentiment polarity are dropped since they do not contribute to the impact score.
-        Data is normalized between -100 and 100
+        Data is normalized between -1 and 1
         """
+        
         self.twitterDF = twitterDF
         self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
         self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
@@ -158,7 +178,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     tListAll = []
     while time.time() < t_end:
         for i in range(len(trendsList)):
-            tListAll = (bot1.searchTweets(trendsList[i])[0])
+            tListAll = (bot1._searchTweets(trendsList[i])[0])
         time.sleep(onceEvery)
         print('End of sleep')
     #Once again dropping duplicates to have a clean dataFrame
