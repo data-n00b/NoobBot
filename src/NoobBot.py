@@ -238,12 +238,12 @@ if __name__ == '__main__':
     bot1 = NoobBot(api)
     #List of Trends to search for. Using New York as a placeholder but
     #this can be any location in the JSON file.
-    #trendsList = bot1.locTrends(getLocation('New York'))
+    trendsList = bot1.locTrends(getLocation('New York'))
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
-    #scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
-    scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
+    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 1,save='Y')
+    #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
     tweetImpact = bot1.calculateScore(scrappedTweets)
     #Defining a new set of data to predict for
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     mlObject.buildModel()
     newP = mlObject.modelPredict()    
     #Compose tweets from the given list of trends.
-    trendsList = list(set(list(scrappedTweets['Search Term'])))
+    #trendsList = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
     plotTheBot(tweetImpact)
     plotTheBot(newP)
