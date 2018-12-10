@@ -1,4 +1,6 @@
-
+'''
+Source code at https://github.com/data-n00b/NoobBot
+'''
 #---------------Importing Packages----------------------#
 import tweepy
 import json
@@ -162,7 +164,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     tListAll = []
     while time.time() < t_end:
         for i in range(len(trendsList)):
-            tListAll = (bot1._searchTweets(trendsList[i])[0])
+            tListAll = (bot._searchTweets(trendsList[i])[0])
         time.sleep(onceEvery)
         print('End of sleep')
     #Once again dropping duplicates to have a clean dataFrame
@@ -187,9 +189,6 @@ def getLocation(locString):
     for i in data:
         if i['name'] == locString:
             return i['woeid']
-        else:
-            print("Unable to match exact location. Defaulting to worldwide")
-            return 1
         
 def plotTheBot(inputDF,figureName):
     '''
@@ -250,12 +249,7 @@ if __name__ == '__main__':
     consumer_secret = '<Your Consumer Secret>'; 
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
-    '''
-    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'
-    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'
-    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs'
-    
+    '''    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -288,5 +282,5 @@ if __name__ == '__main__':
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
     print("The machine generated tweets for the keywords are:\n")
     pprint.pprint(composedTweets)
-    plotTheBot(tweetImpact,'Original Impact)
+    plotTheBot(tweetImpact,'Original Impact')
     plotTheBot(newP,'Predicted Impact')
