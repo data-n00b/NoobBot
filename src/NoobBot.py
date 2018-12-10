@@ -1,23 +1,6 @@
-""" NOTES
-Tweepy does not seem to handle the #Retweeted module very well. Doing an automatic search before putting into a dataFrame
-Run once and check what the columns of the dataframe are.
-You can probably drop the user handle.
-Figure out a way to come up with an impact score.
-Find good ways to plot.
-Define inputs for the methods.
-Figure out a way to create a way to have a test and training data set with and without the impact scores.
-Iron out kinks with wherever the location information is called.
-Write a better cleanText method. Current method seems to change the content.
-Try to weed out duplicates or try to drop retweets all together.
-Find a way to automatically run and scrape with a bash script.
-
-DONE - Try to use time ticks to capture enough information. - Handled with the sleep module of time
-
-CURRENT STATUS
-Runs the code, takes top ten trends for New York, runs a search for 5 minutes
-Updates content in a dataframe for all above obtained keywords and saves to a data frame.
-Using a bash script to scrape data and shut down the computer.
-"""
+'''
+Source code at https://github.com/data-n00b/NoobBot
+'''
 #---------------Importing Packages----------------------#
 import tweepy
 import json
@@ -29,12 +12,9 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 pd.options.mode.chained_assignment = None
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
-import numpy as np
-
+import pprint
 #---------------Initializing the Tweepy Object----------------------#
 
 #tweept API is an autheticated tweepy object
@@ -45,15 +25,36 @@ class NoobBot(object):
 #Location set to New York By default
 #locTrends returns a list of trend names from the JSON object
     def locTrends(self, woeid = 1,numTrends = 10):
-        self.trend =[]
-        self.trendJSON = self.tweepyOb.trends_place(woeid)
-        for i in range(numTrends):
-            self.trend.append(self.trendJSON[0]['trends'][i]['name'])
-        return self.trend
+        '''
+        locTrends returns the keywords currently trending in a speicifc location.
+        woeid is a Where on Earth ID from Yahoo APIs. Defaults to 1(Worldwide) when
+        a location is not specified.
+        numTrends is the number of trends to look for.
+        '''
+        try:
+            #woeid and numTrends cannot be anything other than integers. Exception handling.
+            if type(woeid) == int and type(numTrends) == int:
+                self.trend =[]
+                self.trendJSON = self.tweepyOb.trends_place(woeid)
+                for i in range(numTrends):
+                    self.trend.append(self.trendJSON[0]['trends'][i]['name'])
+                return self.trend
+            else:
+                raise TypeError("Only Integer values accepted for woeid and number of trends")
+        except TypeError:
+            print("Invalid location or number ID. Both values should be integers")
 #searchTweets to search and return tweets within a location. Defaults to worldwide
 #Have to figure out a way to limit duplicates.
 #Maybe run it every hour or so.
-    def searchTweets(self,searchQuery):
+    def _searchTweets(self,searchQuery):
+        '''
+        Takes a single input keyword that can be any valid string or number and searchTweets
+        returns 100 of the most recent and popular tweets for that keyword.
+        If a list input is given the entire input is treated as a single string to search for.
+        This method is not directly called by the user and by convention is defined with
+        the single underscore in front of the name.
+        Returns a dataframe of tweet data and a tweepy search object.
+        '''
         #Search Quesry Loaded with defaults.
         self.termSearch = self.tweepyOb.search(searchQuery,lang='en',count = 100,show_user=False,result_type='mixed')
         #Retireving all tweets and marking reweets
@@ -63,6 +64,7 @@ class NoobBot(object):
             if tweet[3].startswith('RT '):
                 tweet[4] = True
             tweet[3] = self.cleanTweet(tweet[3])
+        #Dataframe Column defenitions    
         self.colNames =['Search Term','Tweet ID','Created At','Tweet Text','Retweeted','Retweet Count','Favorite Count','Followers Count','Is Verified','User Handle','Sentiment Polarity']
         self.tweetDF = pd.DataFrame(self.tweets,columns = self.colNames)
         self.tweetDF = self.tweetDF.drop_duplicates(subset='Tweet ID')
@@ -70,12 +72,23 @@ class NoobBot(object):
         return  self.tweetDF,self.termSearch
 #Clean Dataframe cleans the text in the tweets and returns a dataframe with the text, id and parameters    
     def cleanTweet(self,text):
+        '''
+        Method to strip a tweet of links, @mentions and braces for processing
+        Returns the cleaned text.
+        Used internally but can also be called to clean external tweeet data
+        '''
         text = re.sub(r"(?:\@|https?\://)\S+", "", text) #Strip @mentions and links.
+        text = re.sub(r'\([^)]*\)', '', text)
         text = text.strip() #Strip trailing and beginning whitespaces
         text = " ".join(text.split()) #Handle any other whitespaces in the middle of the text
         return text
     
     def tweetSentiment(self,text):
+        '''
+        Returns a value within -1 to 1 as the measure of polarity of the tweet text
+        before it is cleaned.
+        Primarily interal.
+        '''
         self.blob = TextBlob(text)
         return self.blob.sentiment.polarity
        
@@ -85,27 +98,34 @@ class NoobBot(object):
         Method to calculate raw and normalized impact scores.
         Input is a data frame object returned by the searchTweets method
         Tweets with 0 sentiment polarity are dropped since they do not contribute to the impact score.
-        Data is normalized between -100 and 100
+        Data is normalized between -1 and 1
         """
-        self.twitterDF = twitterDF
-        self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
-        self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
-        self.twitterDF['nImpactScore'] = 0
-        #Dropping Tweets that have neutral polarity        
-        #Normalizing Impact score calculation by group
-        self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
-        self.groupedAll = self.twitterDF.groupby('Search Term')        
-        a = -1
-        b = 1
-        for name, group in self.groupedAll:
-            maxR = max(group['rawImpactScore'])
-            minR = min(group['rawImpactScore'])
-            tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
-            term1 = (b-a)
-            term2 = (tempRaw - minR)/(maxR - minR)
-            self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
-        self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
-        return self.twitterDF
+        colNames = ['Search Term', 'Tweet ID', 'Created At', 'Tweet Text', 'Retweeted', 'Retweet Count', 'Favorite Count', 'Followers Count', 'Is Verified', 'User Handle', 'Sentiment Polarity']
+        try:
+            if list(twitterDF) == colNames:
+                self.twitterDF = twitterDF
+                self.twitterDF['cVerified'] = [2 if i == True else 1 for i in self.twitterDF['Is Verified']]
+                self.twitterDF['rawImpactScore'] = (self.twitterDF['Retweet Count'] + self.twitterDF['Favorite Count'] + (self.twitterDF['Followers Count']*self.twitterDF['cVerified']))*self.twitterDF['Sentiment Polarity']
+                self.twitterDF['nImpactScore'] = 0
+                #Dropping Tweets that have neutral polarity        
+                #Normalizing Impact score calculation by group
+                self.twitterDF = self.twitterDF[self.twitterDF['rawImpactScore'] != 0]
+                self.groupedAll = self.twitterDF.groupby('Search Term')        
+                a = -1
+                b = 1
+                for name, group in self.groupedAll:
+                    maxR = max(group['rawImpactScore'])
+                    minR = min(group['rawImpactScore'])
+                    tempRaw = self.twitterDF['rawImpactScore'][self.twitterDF['Search Term'] == name]
+                    term1 = (b-a)
+                    term2 = (tempRaw - minR)/(maxR - minR)
+                    self.twitterDF['nImpactScore'][self.twitterDF['Search Term'] == name] = (term1*term2) + (a)
+                self.twitterDF = self.twitterDF.drop(['Tweet ID', 'cVerified'],axis=1)
+                return self.twitterDF
+            else:
+                raise TypeError
+        except TypeError:
+            print("Mistmatch in column names of input data. Please verify column names and try again")
     
     def markovTweet(self,modelIn,tweetAbout):
         '''
@@ -126,9 +146,9 @@ class NoobBot(object):
             self.model[i] = markovify.Text(self.modelInput)
             #Handling Hashtags in the tweetAbout
             if self.tweetAbout[i][0] == '#':
-                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + self.tweetAbout[i]
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(200) + self.tweetAbout[i]
             else:
-                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(140) + ' #' + self.tweetAbout[i]
+                self.composed[self.tweetAbout[i]] = self.model[i].make_short_sentence(200) + ' #' + self.tweetAbout[i]
         return self.composed
 '''HELPER FUNCTIONS'''
 #Defining Tweet Scraper as a separate function outside the scope of the class
@@ -144,7 +164,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     tListAll = []
     while time.time() < t_end:
         for i in range(len(trendsList)):
-            tListAll = (bot1.searchTweets(trendsList[i])[0])
+            tListAll = (bot._searchTweets(trendsList[i])[0])
         time.sleep(onceEvery)
         print('End of sleep')
     #Once again dropping duplicates to have a clean dataFrame
@@ -160,6 +180,9 @@ def getLocation(locString):
     """
     Method to get the name or location of the closest match
     and return the weoid from the json
+    Dependency is that the JSON file should always be in the 
+    same folder as the program.
+    Returns worldwide as default if the location is not found.
     """
     with open("weoidJSON.json", "r") as read_file:
         data = json.load(read_file)
@@ -167,9 +190,14 @@ def getLocation(locString):
         if i['name'] == locString:
             return i['woeid']
         
-def plotTheBot(inputDF):
+def plotTheBot(inputDF,figureName):
+    '''
+    Straightforward plotting of the normalized impact score for
+    each keyword over time
+    '''
     inputDF = inputDF.groupby(['Search Term'])
     fig, ax = plt.subplots()
+    ax.set_title(figureName)
     for name, group in inputDF:
         group.plot(y='nImpactScore',ax=ax,label = name)
     plt.show()
@@ -214,7 +242,6 @@ class predictImpact(object):
         self.predictData['nImpactScore'] = self.val_predictions
         return self.predictData
 
-
 if __name__ == '__main__':
 
     '''
@@ -222,8 +249,7 @@ if __name__ == '__main__':
     consumer_secret = '<Your Consumer Secret>'; 
     access_token = '<Your Access token>'; 
     access_token_secret = '<Your Access Token Secret>';
-    '''
-    
+    '''    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -234,11 +260,14 @@ if __name__ == '__main__':
     bot1 = NoobBot(api)
     #List of Trends to search for. Using New York as a placeholder but
     #this can be any location in the JSON file.
-    trendsList = bot1.locTrends(getLocation('New York'))
+    locationIn = input("Enter a location to search trends for: ")
+    trendsList = bot1.locTrends(getLocation(locationIn))
+    print(f"The trends for {locationIn} are {trendsList}")
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
-    scrappedTweets = tweetScraper(bot1,trendsList,forTime = 3,save='Y')
+    forTimeIn = int(input("Enter the amount of time in minutes to collect information: "))
+    scrappedTweets = tweetScraper(bot1,trendsList,forTime = forTimeIn,save='Y')
     #scrappedTweets = pd.read_csv("12_06_2018 tweetDump.csv")
     #Calculating Impact Scores
     tweetImpact = bot1.calculateScore(scrappedTweets)
@@ -251,5 +280,7 @@ if __name__ == '__main__':
     #Compose tweets from the given list of trends.
     #trendsList = list(set(list(scrappedTweets['Search Term'])))
     composedTweets = bot1.markovTweet(scrappedTweets,trendsList)
-    plotTheBot(tweetImpact)
-    plotTheBot(newP)
+    print("The machine generated tweets for the keywords are:\n")
+    pprint.pprint(composedTweets)
+    plotTheBot(tweetImpact,'Original Impact')
+    plotTheBot(newP,'Predicted Impact')
