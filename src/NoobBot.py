@@ -172,7 +172,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     tListAll = tListAll.drop_duplicates(subset='Tweet ID')   
     tListAll = tListAll.drop_duplicates(subset='Tweet Text')
     if save == 'Y':
-        with open("./output/"+filename,'a',encoding="UTF8") as file:
+        with open(filename,'a',encoding="UTF8") as file:
             tListAll.to_csv(file,header=True)
         print('Finished Scraping')
     return tListAll
@@ -245,10 +245,10 @@ class predictImpact(object):
         self.y = self.predictData.nImpactScore
         self.val_predictions = self.tweetModel.predict(self.inData)
         self.predictData['nImpactScore'] = self.val_predictions
-        outFile = "./output/predictedImpact.csv"
+        outFile = "predictedImpact.csv"
         with open(outFile,'w',encoding="UTF8") as file:
-            self.predictData[['Search Term','nImpactScore']].to_csv(file,header=True)
-        outFile.close()
+            self.predictData[['Search Term','nImpactScore']].to_csv(file,header=True,index=False)
+            file.close()
         return self.predictData
 
 if __name__ == '__main__':
@@ -261,10 +261,7 @@ if __name__ == '__main__':
     '''    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
-    consumer_key = 'x45FNED54ZkOzcWpK5I7KNkmT'
-    consumer_secret = '9N4ABRaa9m6F2efgqlO1VP6014yoFcR1y29V51PuSMrOpwPpsX'
-    access_token = '1057119039569489922-ltle8eR6UMBaYM0xwOYJ9GHPNU7PDF'
-    access_token_secret = 'WIGeuVyguIYwjeA5lXJJWPUePK8KTIxEKuM5jPFT3DBcs'
+
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
