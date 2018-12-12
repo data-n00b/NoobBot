@@ -159,6 +159,7 @@ def tweetScraper(bot,trendsList,forTime=15,onceEvery=60,filename = (datetime.dat
     onceEvery - Time in seconds that the scrapper sleeps and wakes.
     trendsList - List of Trends from an object or custom trends to search for. Must be a list object
     writes to an output CSV file
+    Defaults are loaded as per the fucntion defention.
     '''
     t_end = time.time() + onceEvery*forTime
     tListAll = []
@@ -189,6 +190,9 @@ def getLocation(locString):
     for i in data:
         if i['name'] == locString:
             return i['woeid']
+    else:
+        print("Unable to find an exact location match. Defaulting to Worldwide")
+        return 1
         
 def plotTheBot(inputDF,figureName):
     '''
@@ -208,6 +212,7 @@ class predictImpact(object):
         features - List of features that the model is to be trained on
         Precondtion for the ML model is that the keywords should be the same
         as the ones in the Training model.
+        Writes the list of keword and predicted values to a text file for further processing.
         """
         #Data Pre-processing
         self.trainData = trainData
@@ -240,6 +245,10 @@ class predictImpact(object):
         self.y = self.predictData.nImpactScore
         self.val_predictions = self.tweetModel.predict(self.inData)
         self.predictData['nImpactScore'] = self.val_predictions
+        outFile = "predictedImpact.csv"
+        with open(outFile,'w',encoding="UTF8") as file:
+            self.predictData[['Search Term','nImpactScore']].to_csv(file,header=True,index=False)
+            file.close()
         return self.predictData
 
 if __name__ == '__main__':
@@ -252,6 +261,7 @@ if __name__ == '__main__':
     '''    
     #Auth is a tweepy object to initialize a twitter bot.
     #Did not use in a function since the keys are private and it would be a wrapper around a wrapper.
+
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     
@@ -262,7 +272,7 @@ if __name__ == '__main__':
     #this can be any location in the JSON file.
     locationIn = input("Enter a location to search trends for: ")
     trendsList = bot1.locTrends(getLocation(locationIn))
-    print(f"The trends for {locationIn} are {trendsList}")
+    print(f"The trends are {trendsList}")
     #Tweet Scrapping
     #Tweets can either be scraped on read in from a previously scrapped file
     #with the same column format.
